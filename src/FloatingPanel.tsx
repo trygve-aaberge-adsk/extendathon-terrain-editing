@@ -22,6 +22,44 @@ import {
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter"
 
+
+function isInside(point: [number, number], vs: [number, number][]) {
+  // ray-casting algorithm based on
+  // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
+
+  var x = point[0], y = point[1];
+
+  var inside = false;
+  for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+      var xi = vs[i][0], yi = vs[i][1];
+      var xj = vs[j][0], yj = vs[j][1];
+
+      var intersect = ((yi > y) != (yj > y))
+          && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+  }
+
+  return inside;
+};
+
+function applyPlaneToTerrain(terrain: BufferGeometry, polygon: [number, number][]) {
+  const newTerrain = terrain.clone()
+  const posarray = newTerrain.toNonIndexed().getAttribute("position").array as Float32Array
+  for (let i = 0; i < posarray.length / 3; i++) {
+    const x = posarray[i * 3]
+    const y = posarray[i * 3 + 1]
+    if (isInside([x, y], polygon)) {
+      posarray[i * 3 + 2] = 0
+    }
+  }
+  const geometry = new BufferGeometry()
+  geometry.setAttribute(
+    "position",
+    new BufferAttribute(posarray, 3),
+  )
+  return geometry
+}
+
 function loadImageData(url: string) {
   return new Promise<Uint8ClampedArray>((resolve, reject) => {
     const img = new Image()
@@ -57,6 +95,10 @@ function FloatingPanel() {
   useEffect(() => {
     async function lol() {
       const url = new URLSearchParams(window.location.search).get("image")
+      const drawnPolygon = JSON.parse(
+        new URLSearchParams(window.location.search).get("polygon")!,
+      ) as { x: number; y: number; z: number }[]
+      const polygon = drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number])
 
       if (url) {
         // Usage example
@@ -69,7 +111,8 @@ function FloatingPanel() {
             const b = data[i * 4 + 2]
             posarray[i * 3 + 2] = (900 - (r + g + b)) * 0.02
           }
-          scene.add(new Mesh(plan, material))
+          const newGeometry = applyPlaneToTerrain(plan, polygon)
+          scene.add(new Mesh(newGeometry, material))
         })
       } else {
         const terrainPath = await Forma.geometry.getPathsByCategory({
@@ -83,7 +126,8 @@ function FloatingPanel() {
           "position",
           new BufferAttribute(terrainTriangles, 3),
         )
-        scene.add(new Mesh(geometry, material))
+        const newGeometry = applyPlaneToTerrain(geometry, polygon)
+        scene.add(new Mesh(newGeometry, material))
       }
     }
     lol()
