@@ -300,7 +300,6 @@ function FloatingPanel() {
   }
 
   async function save() {
-    const refPoint = (await Forma.project.get()).refPoint
     const bbox = await Forma.terrain
       .getBbox()
       .then((bbox) => [
@@ -310,8 +309,8 @@ function FloatingPanel() {
     const glb: ArrayBuffer = await new Promise((resolve, reject) => {
       if (terrainMesh != null) {
         const exportmesh = new Mesh(terrainMesh.geometry.clone())
+        repair(bbox, exportmesh.geometry)
         exportmesh.geometry.rotateX(-Math.PI / 2)
-        repair(refPoint, bbox, exportmesh.geometry)
         new GLTFExporter().parse(
           exportmesh,
           (res) => {
