@@ -90,6 +90,7 @@ function FloatingPanel() {
   let scene: Scene;
   const [height, setHeight] = useState(0)
   const [normal, setNormal] = useState<[number, number, number]>([0,0,1])
+  const [funMode, setFunMode] = useState(false)
   useEffect(() => {
     scene = new Scene()
     async function lol() {
@@ -158,17 +159,19 @@ function FloatingPanel() {
     const material = new ShaderMaterial({
       uniforms: {
         time: { value: 0 },
+        funMode: { value: false }
       },
       wireframe: true,
       // language=Glsl
       vertexShader: `
             varying float f;
             uniform float time;
+            uniform bool funMode;
             void main() {
                 f = position.z / 20.;
                 vec3 pos = position;
                 float l = length(position.xy / 250.);
-                pos.z += l * sin(time * 0.001 + 15. * l) * 5.;
+                if (funMode) pos.z += l * sin(time * 0.001 + 15. * l) * 5.;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
             }
         `,
@@ -176,8 +179,10 @@ function FloatingPanel() {
       fragmentShader: `
             varying float f;
             uniform float time;
+            uniform bool funMode;
             void main() {
-                gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
+              gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
+                if (funMode) gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
             }
         `,
     })
@@ -197,6 +202,7 @@ function FloatingPanel() {
 
     // Render the scene
     function loop(t: number) {
+      material.uniforms.funMode.value = funMode
       cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
       if (r) {
         material.uniforms.time.value = t
@@ -228,6 +234,7 @@ function FloatingPanel() {
       <input type="range" min="0" max="100" value={height} onInput={(e) => setHeight(parseInt(e.currentTarget.value))} />
       <input type="range" min="0" max="1" step="0.1" value={normal[0]} onInput={(e) => setNormal([parseFloat(e.currentTarget.value), normal[1], normal[2]])} />
       <input type="range" min="0" max="1" step="0.1" value={normal[1]} onInput={(e) => setNormal([normal[0], parseFloat(e.currentTarget.value), normal[2]])} />
+      <button onClick={() => setFunMode(!funMode)}>{funMode ? "Please stop" : "I am bored" } </button>
     </>
   )
 }
