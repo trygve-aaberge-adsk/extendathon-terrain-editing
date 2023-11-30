@@ -1,5 +1,5 @@
 import { render } from "preact"
-import FloatingPanel from "./Scene"
+import FloatingPanel from "./FloatingPanel"
 
 function App() {
   return <FloatingPanel />
