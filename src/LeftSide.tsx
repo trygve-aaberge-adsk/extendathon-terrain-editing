@@ -22,7 +22,7 @@ function getFloatingPanelUrl(polygon: Vec3[] | undefined) {
 
 function openFloatingPanel(polygon: Vec3[] | undefined) {
   const url = getFloatingPanelUrl(polygon)
-  Forma.openFloatingPanel({
+  void Forma.openFloatingPanel({
     embeddedViewId: "floating-panel",
     url,
     preferredSize: {
@@ -38,11 +38,11 @@ export default function LeftSide() {
   )
 
   if (polygonQuery != null) {
-    openFloatingPanel(JSON.parse(polygonQuery))
+    openFloatingPanel(JSON.parse(polygonQuery) as Vec3[])
   }
 
   const selectPolygon = useCallback(() => {
-    Forma.designTool.getPolygon().then((polygon) => {
+    void Forma.designTool.getPolygon().then((polygon) => {
       console.log("polygon", JSON.stringify(polygon))
       console.log(
         "polygon encoded",

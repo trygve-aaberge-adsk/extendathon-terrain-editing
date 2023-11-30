@@ -4,7 +4,7 @@ module.exports = {
   extends: ["eslint:recommended", "plugin:prettier/recommended"],
   overrides: [
     {
-      files: ["*.ts"],
+      files: ["*.ts", "*.tsx"],
       parser: "@typescript-eslint/parser",
       plugins: ["@typescript-eslint"],
       extends: [
@@ -19,10 +19,11 @@ module.exports = {
         "@typescript-eslint/no-unnecessary-condition": "off",
         "@typescript-eslint/consistent-type-definitions": "off",
         "@typescript-eslint/non-nullable-type-assertion-style": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
       },
     },
     {
-      files: ["*.cjs"],
+      files: ["*.js", "*.jsx", "*.cjs"],
     },
   ],
 }

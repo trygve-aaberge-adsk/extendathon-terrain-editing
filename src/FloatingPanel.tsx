@@ -13,34 +13,42 @@ import {
   Scene,
   ShaderMaterial,
   TextureLoader,
-  WebGLRenderer
+  WebGLRenderer,
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter"
-
 
 function isInside(point: [number, number], vs: [number, number][]) {
   // ray-casting algorithm based on
   // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
 
-  var x = point[0], y = point[1];
+  const x = point[0],
+    y = point[1]
 
-  var inside = false;
-  for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-      var xi = vs[i][0], yi = vs[i][1];
-      var xj = vs[j][0], yj = vs[j][1];
+  let inside = false
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    const xi = vs[i][0],
+      yi = vs[i][1]
+    const xj = vs[j][0],
+      yj = vs[j][1]
 
-      var intersect = ((yi > y) != (yj > y))
-          && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
+    const intersect =
+      yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+    if (intersect) inside = !inside
   }
 
-  return inside;
-};
+  return inside
+}
 
-function applyPlaneToTerrain(terrain: BufferGeometry, polygon: [number, number][], height: number, normal: [number, number, number]) {
+function applyPlaneToTerrain(
+  terrain: BufferGeometry,
+  polygon: [number, number][],
+  height: number,
+  normal: [number, number, number],
+) {
   const newTerrain = terrain.clone()
-  const posarray = newTerrain.toNonIndexed().getAttribute("position").array as Float32Array
+  const posarray = newTerrain.toNonIndexed().getAttribute("position")
+    .array as Float32Array
   for (let i = 0; i < posarray.length / 3; i++) {
     const x = posarray[i * 3]
     const y = posarray[i * 3 + 1]
@@ -49,10 +57,7 @@ function applyPlaneToTerrain(terrain: BufferGeometry, polygon: [number, number][
     }
   }
   const geometry = new BufferGeometry()
-  geometry.setAttribute(
-    "position",
-    new BufferAttribute(posarray, 3),
-  )
+  geometry.setAttribute("position", new BufferAttribute(posarray, 3))
   return geometry
 }
 
@@ -87,10 +92,11 @@ function goto(name?: string) {
 }
 
 function FloatingPanel() {
-  let scene: Scene;
+  let scene: Scene
   const [height, setHeight] = useState(0)
-  const [normal, setNormal] = useState<[number, number, number]>([0,0,1])
+  const [normal, setNormal] = useState<[number, number, number]>([0, 0, 1])
   const [funMode, setFunMode] = useState(false)
+
   useEffect(() => {
     scene = new Scene()
     async function lol() {
@@ -98,11 +104,13 @@ function FloatingPanel() {
       const drawnPolygon = JSON.parse(
         new URLSearchParams(window.location.search).get("polygon")!,
       ) as { x: number; y: number; z: number }[]
-      const polygon = drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number])
+      const polygon = drawnPolygon.map(
+        (coord) => [coord.x, coord.y] as [number, number],
+      )
 
       if (url) {
         // Usage example
-        loadImageData(url).then((data) => {
+        void loadImageData(url).then((data) => {
           const plan = new PlaneGeometry(500, 500, 499, 499)
           const posarray = plan.getAttribute("position").array as Float32Array
           for (let i = 0; i < 500 * 500; i++) {
@@ -126,11 +134,16 @@ function FloatingPanel() {
           "position",
           new BufferAttribute(terrainTriangles, 3),
         )
-        const newGeometry = applyPlaneToTerrain(geometry, polygon, height, normal)
+        const newGeometry = applyPlaneToTerrain(
+          geometry,
+          polygon,
+          height,
+          normal,
+        )
         scene.add(new Mesh(newGeometry, material))
       }
     }
-    lol()
+    void lol()
     const canvas = document.getElementById("canvas") as HTMLCanvasElement
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
@@ -159,7 +172,7 @@ function FloatingPanel() {
     const material = new ShaderMaterial({
       uniforms: {
         time: { value: 0 },
-        funMode: { value: false }
+        funMode: { value: false },
       },
       wireframe: true,
       // language=Glsl
@@ -218,23 +231,98 @@ function FloatingPanel() {
     const glb: ArrayBuffer = await new Promise((resolve, reject) => {
       const exportmesh = new Mesh(mesh.geometry.clone())
       exportmesh.geometry.rotateX(-Math.PI / 2)
-      new GLTFExporter().parse(exportmesh, (res) => resolve(res as ArrayBuffer), reject, { binary: true })
+      new GLTFExporter().parse(
+        exportmesh,
+        (res) => {
+          resolve(res as ArrayBuffer)
+        },
+        reject,
+        { binary: true },
+      )
     })
-     await Forma.proposal.replaceTerrain({ glb })
+    await Forma.proposal.replaceTerrain({ glb })
   }
 
   return (
     <>
-      <button onClick={() => goto("erna")}>Erna</button>
-      <button onClick={() => goto("sindre")}>Sindre</button>
-      <button onClick={() => goto("john")}>John</button>
-      <button onClick={() => goto("andrew")}>Andrew</button>
-      <button onClick={() => goto()}>Current terrain</button>
-      <button onClick={save}>Save</button>
-      <input type="range" min="0" max="100" value={height} onInput={(e) => setHeight(parseInt(e.currentTarget.value))} />
-      <input type="range" min="0" max="1" step="0.1" value={normal[0]} onInput={(e) => setNormal([parseFloat(e.currentTarget.value), normal[1], normal[2]])} />
-      <input type="range" min="0" max="1" step="0.1" value={normal[1]} onInput={(e) => setNormal([normal[0], parseFloat(e.currentTarget.value), normal[2]])} />
-      <button onClick={() => setFunMode(!funMode)}>{funMode ? "Please stop" : "I am bored" } </button>
+      <button
+        onClick={() => {
+          goto("erna")
+        }}
+      >
+        Erna
+      </button>
+      <button
+        onClick={() => {
+          goto("sindre")
+        }}
+      >
+        Sindre
+      </button>
+      <button
+        onClick={() => {
+          goto("john")
+        }}
+      >
+        John
+      </button>
+      <button
+        onClick={() => {
+          goto("andrew")
+        }}
+      >
+        Andrew
+      </button>
+      <button
+        onClick={() => {
+          goto()
+        }}
+      >
+        Current terrain
+      </button>
+      <button
+        onClick={() => {
+          void save()
+        }}
+      >
+        Save
+      </button>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value={height}
+        onInput={(e) => {
+          setHeight(parseInt(e.currentTarget.value))
+        }}
+      />
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.1"
+        value={normal[0]}
+        onInput={(e) => {
+          setNormal([parseFloat(e.currentTarget.value), normal[1], normal[2]])
+        }}
+      />
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.1"
+        value={normal[1]}
+        onInput={(e) => {
+          setNormal([normal[0], parseFloat(e.currentTarget.value), normal[2]])
+        }}
+      />
+      <button
+        onClick={() => {
+          setFunMode(!funMode)
+        }}
+      >
+        {funMode ? "Please stop" : "I am bored"}{" "}
+      </button>
     </>
   )
 }
