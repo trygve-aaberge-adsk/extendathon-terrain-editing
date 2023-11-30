@@ -40,7 +40,7 @@ function isInside(point: [number, number], vs: [number, number][]) {
   return inside
 }
 
-function applyPlaneToTerrain(
+function getNewTerrainVertices(
   terrain: BufferGeometry,
   polygon: [number, number][],
   height: number,
@@ -56,9 +56,7 @@ function applyPlaneToTerrain(
       posarray[i * 3 + 2] = height - (x * normal[0] + y * normal[1])
     }
   }
-  const geometry = new BufferGeometry()
-  geometry.setAttribute("position", new BufferAttribute(posarray, 3))
-  return geometry
+  return posarray
 }
 
 function loadImageData(url: string) {
@@ -92,21 +90,46 @@ function goto(name?: string) {
 }
 
 function FloatingPanel() {
-  let scene: Scene
+  const [scene] = useState(new Scene())
+  const [originalTerrainGeometry, setOriginalTerrainGeometry] =
+    useState<BufferGeometry>()
+  const [terrainMesh, setTerrainMesh] = useState<Mesh>()
+  const [polygon, setPolygon] = useState<[number, number][]>()
+
   const [height, setHeight] = useState(0)
   const [normal, setNormal] = useState<[number, number, number]>([0, 0, 1])
   const [funMode, setFunMode] = useState(false)
 
+  const terrainMaterial = new ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+    },
+    wireframe: true,
+    // language=Glsl
+    vertexShader: `
+            varying float f;
+            uniform float time;
+            void main() {
+                f = position.z / 20.;
+                vec3 pos = position;
+                float l = length(position.xy / 250.);
+                pos.z += l * sin(time * 0.001 + 15. * l) * 5.;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `,
+    // language=Glsl
+    fragmentShader: `
+            varying float f;
+            uniform float time;
+            void main() {
+                gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
+            }
+        `,
+  })
+
   useEffect(() => {
-    scene = new Scene()
-    async function lol() {
+    async function initTerrain() {
       const url = new URLSearchParams(window.location.search).get("image")
-      const drawnPolygon = JSON.parse(
-        new URLSearchParams(window.location.search).get("polygon")!,
-      ) as { x: number; y: number; z: number }[]
-      const polygon = drawnPolygon.map(
-        (coord) => [coord.x, coord.y] as [number, number],
-      )
 
       if (url) {
         // Usage example
@@ -119,8 +142,10 @@ function FloatingPanel() {
             const b = data[i * 4 + 2]
             posarray[i * 3 + 2] = (900 - (r + g + b)) * 0.02
           }
-          const newGeometry = applyPlaneToTerrain(plan, polygon, height, normal)
-          scene.add(new Mesh(newGeometry, material))
+          const mesh = new Mesh(plan, terrainMaterial)
+          scene.add(mesh)
+          setOriginalTerrainGeometry(plan)
+          setTerrainMesh(mesh)
         })
       } else {
         const terrainPath = await Forma.geometry.getPathsByCategory({
@@ -134,19 +159,25 @@ function FloatingPanel() {
           "position",
           new BufferAttribute(terrainTriangles, 3),
         )
-        const newGeometry = applyPlaneToTerrain(
-          geometry,
-          polygon,
-          height,
-          normal,
-        )
-        scene.add(new Mesh(newGeometry, material))
+        const mesh = new Mesh(geometry, terrainMaterial)
+        scene.add(mesh)
+        setOriginalTerrainGeometry(geometry)
+        setTerrainMesh(mesh)
       }
     }
-    void lol()
+
     const canvas = document.getElementById("canvas") as HTMLCanvasElement
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
+
+    const drawnPolygon = JSON.parse(
+      new URLSearchParams(window.location.search).get("polygon")!,
+    ) as { x: number; y: number; z: number }[]
+    setPolygon(
+      drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number]),
+    )
+
+    void initTerrain()
 
     // Setup basic THREE js app for the canvas
     const renderer = new WebGLRenderer({ canvas, antialias: true })
@@ -169,37 +200,6 @@ function FloatingPanel() {
     const cube = new Mesh(geometry, m)
     //scene.add(cube)
 
-    const material = new ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        funMode: { value: false },
-      },
-      wireframe: true,
-      // language=Glsl
-      vertexShader: `
-            varying float f;
-            uniform float time;
-            uniform bool funMode;
-            void main() {
-                f = position.z / 20.;
-                vec3 pos = position;
-                float l = length(position.xy / 250.);
-                if (funMode) pos.z += l * sin(time * 0.001 + 15. * l) * 5.;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-            }
-        `,
-      // language=Glsl
-      fragmentShader: `
-            varying float f;
-            uniform float time;
-            uniform bool funMode;
-            void main() {
-              gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
-                if (funMode) gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
-            }
-        `,
-    })
-
     const dl = new DirectionalLight(0xffffff, 1)
     dl.position.set(1, 0.7, 0.2)
     scene.add(dl)
@@ -215,16 +215,39 @@ function FloatingPanel() {
 
     // Render the scene
     function loop(t: number) {
-      material.uniforms.funMode.value = funMode
-      cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
-      if (r) {
-        material.uniforms.time.value = t
+      if (terrainMesh != null) {
+        terrainMaterial.uniforms.funMode.value = funMode
+        cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
+        if (r) {
+          terrainMaterial.uniforms.time.value = t
+        }
       }
+
       renderer.render(scene, camera)
       requestAnimationFrame(loop)
     }
     requestAnimationFrame(loop)
-  })
+  }, [])
+
+  useEffect(() => {
+    if (
+      originalTerrainGeometry != null &&
+      polygon != null &&
+      terrainMesh != null
+    ) {
+      const newTerrainVertices = getNewTerrainVertices(
+        originalTerrainGeometry,
+        polygon,
+        height,
+        normal,
+      )
+      terrainMesh.geometry.setAttribute(
+        "position",
+        new BufferAttribute(newTerrainVertices, 3),
+      )
+      terrainMesh.geometry.attributes.position.needsUpdate = true
+    }
+  }, [height, normal, originalTerrainGeometry])
 
   async function save() {
     const mesh = scene.children.find((c) => c.type === "Mesh") as Mesh
