@@ -1,16 +1,22 @@
 import { Forma } from "forma-embedded-view-sdk/auto"
-import { useEffect, useState } from "preact/hooks"
+import { useEffect, useMemo, useState } from "preact/hooks"
 import {
   AmbientLight,
   BufferAttribute,
   BufferGeometry,
   Camera,
   DirectionalLight,
+  DoubleSide,
+  Float32BufferAttribute,
   Mesh,
+  MeshBasicMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
   ShaderMaterial,
+  Shape,
+  ShapeGeometry,
+  Vector2,
   WebGLRenderer,
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
@@ -98,11 +104,22 @@ function FloatingPanel() {
   const [originalTerrainGeometry, setOriginalTerrainGeometry] =
     useState<BufferGeometry>()
   const [terrainMesh, setTerrainMesh] = useState<Mesh>()
-  const [polygon, setPolygon] = useState<[number, number][]>()
-
   const [height, setHeight] = useState(0)
   const [normal, setNormal] = useState<[number, number, number]>([0, 0, 1])
   const [funMode, setFunMode] = useState(false)
+  const drawnPolygon = JSON.parse(
+    new URLSearchParams(window.location.search).get("polygon")!,
+  ) as { x: number; y: number; z: number }[]
+
+  const polygon = drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number])
+  const polyMesh = useMemo(() => {
+    let polyShape = new Shape(polygon.map((coord) => new Vector2(coord[0], coord[1])))
+    const polyGeometry = new ShapeGeometry(polyShape);
+    polyGeometry.setAttribute("position", new Float32BufferAttribute(polygon.map(coord => [coord[0], coord[1], height - (coord[0] * normal[0] + coord[1] * normal[1])]).flat(), 3))
+    const polyMesh = new Mesh(polyGeometry, new MeshBasicMaterial({ color: 0x808080, side: DoubleSide}))
+    scene.add(polyMesh);
+    return polyMesh
+  }, [])
 
   const [terrainMaterial] = useState(
     new ShaderMaterial({
@@ -179,12 +196,7 @@ function FloatingPanel() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    const drawnPolygon = JSON.parse(
-      new URLSearchParams(window.location.search).get("polygon")!,
-    ) as { x: number; y: number; z: number }[]
-    setPolygon(
-      drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number]),
-    )
+
 
     void initTerrain()
 
@@ -254,6 +266,13 @@ function FloatingPanel() {
         new BufferAttribute(newTerrainVertices, 3),
       )
       terrainMesh.geometry.attributes.position.needsUpdate = true
+
+      polyMesh.geometry.setAttribute(
+        "position",
+        new Float32BufferAttribute(polygon.map(coord => [coord[0], coord[1], height + 0.1 - (coord[0] * normal[0] + coord[1] * normal[1])]).flat(), 3)
+      )
+
+      polyMesh.geometry.attributes.position.needsUpdate = true
     }
   }, [height, normal, originalTerrainGeometry])
 
