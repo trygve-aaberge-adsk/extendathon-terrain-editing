@@ -167,7 +167,7 @@ function FloatingPanel() {
     }
 
     async function initTerrain() {
-      const geometry = await getTerrainGeometry()
+      const geometry = (await getTerrainGeometry()).toNonIndexed()
       const mesh = new Mesh(geometry, terrainMaterial)
       scene.add(mesh)
       setOriginalTerrainGeometry(geometry)
