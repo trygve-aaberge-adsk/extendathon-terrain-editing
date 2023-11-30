@@ -102,6 +102,7 @@ function FloatingPanel() {
 
   const terrainMaterial = new ShaderMaterial({
     uniforms: {
+      funMode: { value: false },
       time: { value: 0 },
     },
     wireframe: true,
@@ -109,11 +110,12 @@ function FloatingPanel() {
     vertexShader: `
             varying float f;
             uniform float time;
+            uniform bool funMode;
             void main() {
                 f = position.z / 20.;
                 vec3 pos = position;
                 float l = length(position.xy / 250.);
-                pos.z += l * sin(time * 0.001 + 15. * l) * 5.;
+                if (funMode) pos.z += l * sin(time * 0.001 + 15. * l) * 5.;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
             }
         `,
@@ -121,8 +123,10 @@ function FloatingPanel() {
     fragmentShader: `
             varying float f;
             uniform float time;
+            uniform bool funMode;
             void main() {
-                gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
+                gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0)
+                if(funMode) gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
             }
         `,
   })
