@@ -258,15 +258,17 @@ function FloatingPanel() {
   }, [height, normal, originalTerrainGeometry])
 
   async function save() {
-    const glb: ArrayBuffer = await new Promise(async (resolve, reject) => {
+    const refPoint = (await Forma.project.get()).refPoint
+    const bbox = await Forma.terrain
+      .getBbox()
+      .then((bbox) => [
+        [bbox.min.x, bbox.min.y] as [number, number],
+        [bbox.max.x, bbox.max.y] as [number, number],
+      ])
+    const glb: ArrayBuffer = await new Promise((resolve, reject) => {
       if (terrainMesh != null) {
         const exportmesh = new Mesh(terrainMesh.geometry.clone())
         exportmesh.geometry.rotateX(-Math.PI / 2)
-        const refPoint = (await Forma.project.get()).refPoint
-        const bbox = await Forma.terrain.getBbox().then((bbox) => [
-          [bbox.min.x, bbox.min.y] as [number, number],
-          [bbox.max.x, bbox.max.y] as [number, number],
-        ])
         repair(refPoint, bbox, exportmesh.geometry)
         new GLTFExporter().parse(
           exportmesh,

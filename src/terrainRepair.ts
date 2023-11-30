@@ -1,7 +1,10 @@
 import { BufferAttribute, BufferGeometry } from "three"
 
-
-function recalculateUVs(position: Float32Array, refPoint: [number, number], bboxLocal: [number, number][]) {
+function recalculateUVs(
+  position: Float32Array,
+  refPoint: [number, number],
+  bboxLocal: [number, number][],
+) {
   const offset_x = refPoint[0] - bboxLocal[0][0]
   const offset_y = refPoint[1] - bboxLocal[0][1]
   const width = bboxLocal[1][0] - bboxLocal[0][0]
@@ -15,11 +18,15 @@ function recalculateUVs(position: Float32Array, refPoint: [number, number], bbox
   return new Float32Array(newUvs)
 }
 
-export function repair(refPoint: [number, number], bbox: [number, number][], geometry: BufferGeometry) {
+export function repair(
+  refPoint: [number, number],
+  bbox: [number, number][],
+  geometry: BufferGeometry,
+) {
   const uvs = recalculateUVs(
     geometry.attributes.position.array as Float32Array,
-    refPoint ,
-    bbox ,
+    refPoint,
+    bbox,
   )
   geometry.setAttribute("uv", new BufferAttribute(uvs, 2))
 }
