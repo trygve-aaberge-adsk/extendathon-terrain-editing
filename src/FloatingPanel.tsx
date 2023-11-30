@@ -1,3 +1,5 @@
+import { point as turfPoint, polygon as turfPolygon } from "@turf/helpers"
+import turfPlanepoint from "@turf/planepoint"
 import { Forma } from "forma-embedded-view-sdk/auto"
 import { useEffect, useMemo, useState } from "preact/hooks"
 import {
@@ -300,6 +302,27 @@ function FloatingPanel() {
             activePoint.object.position.z - dy * 0.4,
           )
         }
+
+        const spheresPolygon = spheres.children.map((c) => [
+          c.position.x,
+          c.position.y,
+          c.position.z,
+        ])
+        spheresPolygon.push(spheresPolygon[0])
+        const triangle = turfPolygon([spheresPolygon])
+
+        polyMesh.geometry.setAttribute(
+          "position",
+          new Float32BufferAttribute(
+            polygon.flatMap((coord) => {
+              const point = turfPoint(coord)
+              const zValue = turfPlanepoint(point, triangle)
+              return [coord[0], coord[1], zValue]
+            }),
+            3,
+          ),
+        )
+        polyMesh.geometry.attributes.position.needsUpdate = true
       }
       lastMouseEvent = event
     }

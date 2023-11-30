@@ -10,6 +10,8 @@
     "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
+    "@turf/helpers": "^6.5.0",
+    "@turf/planepoint": "^6.5.0",
     "forma-embedded-view-sdk": "^0.37.0",
     "preact": "^10.19.2",
     "three": "^0.158.0"
