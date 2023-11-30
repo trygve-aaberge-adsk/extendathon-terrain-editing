@@ -42,7 +42,7 @@ const renderer = new WebGLRenderer({ canvas, antialias: true });
 const scene = new Scene();
 const camera = new PerspectiveCamera(75, canvas.width / canvas.height, 0.01, 1000);
 camera.up.set(0, 0, 1);
-camera.position.set(0, -100, 50);
+camera.position.set(-100, -200, 100);
 new OrbitControls(camera, canvas);
 
 // Setup the js app
@@ -127,7 +127,7 @@ function App() {
     return (<>
       <button onClick={() => goto("erna")}>Erna</button>
       <button onClick={() => goto("sindre")}>Sindre</button>
-      <button onClick={() => goto("stalin")}>Stalin</button>
+      <button onClick={() => goto("john")}>John</button>
       <button onClick={() => goto("andrew")}>Andrew</button>
     </>)
 }
