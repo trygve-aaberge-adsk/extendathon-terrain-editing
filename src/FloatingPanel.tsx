@@ -1,23 +1,19 @@
 import { Forma } from "forma-embedded-view-sdk/auto"
-import { useEffect } from "preact/hooks"
+import { useEffect, useState } from "preact/hooks"
 import {
   AmbientLight,
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
   DirectionalLight,
-  DoubleSide,
-  Float32BufferAttribute,
   Mesh,
-  MeshBasicMaterial,
   MeshLambertMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
   ShaderMaterial,
-  ShapeGeometry,
   TextureLoader,
-  WebGLRenderer,
+  WebGLRenderer
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter"
@@ -42,14 +38,14 @@ function isInside(point: [number, number], vs: [number, number][]) {
   return inside;
 };
 
-function applyPlaneToTerrain(terrain: BufferGeometry, polygon: [number, number][]) {
+function applyPlaneToTerrain(terrain: BufferGeometry, polygon: [number, number][], height: number, normal: [number, number, number]) {
   const newTerrain = terrain.clone()
   const posarray = newTerrain.toNonIndexed().getAttribute("position").array as Float32Array
   for (let i = 0; i < posarray.length / 3; i++) {
     const x = posarray[i * 3]
     const y = posarray[i * 3 + 1]
     if (isInside([x, y], polygon)) {
-      posarray[i * 3 + 2] = 0
+      posarray[i * 3 + 2] = height - (x * normal[0] + y * normal[1])
     }
   }
   const geometry = new BufferGeometry()
@@ -91,8 +87,11 @@ function goto(name?: string) {
 }
 
 function FloatingPanel() {
-  const scene = new Scene()
+  let scene: Scene;
+  const [height, setHeight] = useState(0)
+  const [normal, setNormal] = useState<[number, number, number]>([0,0,1])
   useEffect(() => {
+    scene = new Scene()
     async function lol() {
       const url = new URLSearchParams(window.location.search).get("image")
       const drawnPolygon = JSON.parse(
@@ -111,7 +110,7 @@ function FloatingPanel() {
             const b = data[i * 4 + 2]
             posarray[i * 3 + 2] = (900 - (r + g + b)) * 0.02
           }
-          const newGeometry = applyPlaneToTerrain(plan, polygon)
+          const newGeometry = applyPlaneToTerrain(plan, polygon, height, normal)
           scene.add(new Mesh(newGeometry, material))
         })
       } else {
@@ -126,7 +125,7 @@ function FloatingPanel() {
           "position",
           new BufferAttribute(terrainTriangles, 3),
         )
-        const newGeometry = applyPlaneToTerrain(geometry, polygon)
+        const newGeometry = applyPlaneToTerrain(geometry, polygon, height, normal)
         scene.add(new Mesh(newGeometry, material))
       }
     }
@@ -155,26 +154,6 @@ function FloatingPanel() {
     })
     const cube = new Mesh(geometry, m)
     //scene.add(cube)
-
-    const drawnPolygon = JSON.parse(
-      new URLSearchParams(window.location.search).get("polygon")!,
-    ) as { x: number; y: number; z: number }[]
-
-    const polyGeometry = new ShapeGeometry()
-    polyGeometry.setAttribute(
-      "position",
-      new Float32BufferAttribute(
-        drawnPolygon.flatMap((coord) => [coord.x, coord.y, coord.z]),
-        3,
-      ),
-    )
-    let polygon = new Mesh(
-      polyGeometry,
-      new MeshBasicMaterial({
-        side: DoubleSide,
-      }),
-    )
-    scene.add(polygon)
 
     const material = new ShaderMaterial({
       uniforms: {
@@ -246,6 +225,9 @@ function FloatingPanel() {
       <button onClick={() => goto("andrew")}>Andrew</button>
       <button onClick={() => goto()}>Current terrain</button>
       <button onClick={save}>Save</button>
+      <input type="range" min="0" max="100" value={height} onInput={(e) => setHeight(parseInt(e.currentTarget.value))} />
+      <input type="range" min="0" max="1" step="0.1" value={normal[0]} onInput={(e) => setNormal([parseFloat(e.currentTarget.value), normal[1], normal[2]])} />
+      <input type="range" min="0" max="1" step="0.1" value={normal[1]} onInput={(e) => setNormal([normal[0], parseFloat(e.currentTarget.value), normal[2]])} />
     </>
   )
 }
