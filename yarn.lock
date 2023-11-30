@@ -1177,10 +1177,10 @@ flatted@^3.2.9:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.9.tgz#7eb4c67ca1ba34232ca9d2d93e9886e611ad7daf"
   integrity sha512-36yxDn5H7OFZQla0/jFJmbIKTdZAQHngCedGxiMmpNfEZM0sdEeT+WczLQrjK6D7o2aiyLYDnkw0R3JK0Qv1RQ==
 
-forma-embedded-view-sdk@^0.35.0:
-  version "0.35.0"
-  resolved "https://registry.yarnpkg.com/forma-embedded-view-sdk/-/forma-embedded-view-sdk-0.35.0.tgz#335c3d3a331fa66f7bc15d3698450ab0c7968bf9"
-  integrity sha512-k/03IXxi77KY0oU7Mbd/Y2MOKVpbBy/0XmAICqb1G0HcP8j5Dpc5qeghJCapW5jozbwK39CFHqjrwIyw39bzkw==
+forma-embedded-view-sdk@^0.37.0:
+  version "0.37.0"
+  resolved "https://registry.yarnpkg.com/forma-embedded-view-sdk/-/forma-embedded-view-sdk-0.37.0.tgz#1bbc0b842870a625016c17e69381771dd91e7182"
+  integrity sha512-6FKQqGfy4Exulx3/B2A2Au7rPrAEF7qbZ+FXj/XQOcwvLsGGDaYBMyfOZ9XM7Bg1H1WQ5eoFpyMY23Z5EbgX6w==
 
 fs.realpath@^1.0.0:
   version "1.0.0"
