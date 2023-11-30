@@ -37,8 +37,15 @@ function loadImageData(url: string) {
   })
 }
 
-function goto(name: string) {
-  window.location.href = `?image=${name}.png`
+function goto(name?: string) {
+  const urlQuery = new URLSearchParams(window.location.search)
+  if (name != null) {
+    urlQuery.set("image", `${name}.png`)
+  } else {
+    urlQuery.delete("image")
+  }
+console.log(urlQuery.toString());
+  window.location.href = `?${urlQuery.toString()}`
 }
 
 function FloatingPanel() {
@@ -159,9 +166,7 @@ function FloatingPanel() {
       <button onClick={() => goto("sindre")}>Sindre</button>
       <button onClick={() => goto("john")}>John</button>
       <button onClick={() => goto("andrew")}>Andrew</button>
-      <button onClick={() => (window.location.href = "")}>
-        Current terrain
-      </button>
+      <button onClick={() => goto()}>Current terrain</button>
     </>
   )
 }
