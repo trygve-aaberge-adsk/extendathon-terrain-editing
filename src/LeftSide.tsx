@@ -27,6 +27,10 @@ export default function LeftSide() {
       Forma.openFloatingPanel({
         embeddedViewId: "floating-panel",
         url,
+        preferredSize: {
+          width: 10000,
+          height: 10000,
+        },
       })
     })
   }, [])
