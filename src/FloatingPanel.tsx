@@ -111,13 +111,32 @@ function FloatingPanel() {
     new URLSearchParams(window.location.search).get("polygon")!,
   ) as { x: number; y: number; z: number }[]
 
-  const polygon = drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number])
+  const polygon = drawnPolygon.map(
+    (coord) => [coord.x, coord.y] as [number, number],
+  )
   const polyMesh = useMemo(() => {
-    let polyShape = new Shape(polygon.map((coord) => new Vector2(coord[0], coord[1])))
-    const polyGeometry = new ShapeGeometry(polyShape);
-    polyGeometry.setAttribute("position", new Float32BufferAttribute(polygon.map(coord => [coord[0], coord[1], height - (coord[0] * normal[0] + coord[1] * normal[1])]).flat(), 3))
-    const polyMesh = new Mesh(polyGeometry, new MeshBasicMaterial({ color: 0x808080, side: DoubleSide}))
-    scene.add(polyMesh);
+    const polyShape = new Shape(
+      polygon.map((coord) => new Vector2(coord[0], coord[1])),
+    )
+    const polyGeometry = new ShapeGeometry(polyShape)
+    polyGeometry.setAttribute(
+      "position",
+      new Float32BufferAttribute(
+        polygon
+          .map((coord) => [
+            coord[0],
+            coord[1],
+            height - (coord[0] * normal[0] + coord[1] * normal[1]),
+          ])
+          .flat(),
+        3,
+      ),
+    )
+    const polyMesh = new Mesh(
+      polyGeometry,
+      new MeshBasicMaterial({ color: 0x808080, side: DoubleSide }),
+    )
+    scene.add(polyMesh)
     return polyMesh
   }, [])
 
@@ -196,8 +215,6 @@ function FloatingPanel() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-
-
     void initTerrain()
 
     // Setup basic THREE js app for the canvas
@@ -269,7 +286,16 @@ function FloatingPanel() {
 
       polyMesh.geometry.setAttribute(
         "position",
-        new Float32BufferAttribute(polygon.map(coord => [coord[0], coord[1], height + 0.1 - (coord[0] * normal[0] + coord[1] * normal[1])]).flat(), 3)
+        new Float32BufferAttribute(
+          polygon
+            .map((coord) => [
+              coord[0],
+              coord[1],
+              height + 0.1 - (coord[0] * normal[0] + coord[1] * normal[1]),
+            ])
+            .flat(),
+          3,
+        ),
       )
 
       polyMesh.geometry.attributes.position.needsUpdate = true
