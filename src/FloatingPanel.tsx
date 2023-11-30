@@ -8,14 +8,18 @@ import {
   DirectionalLight,
   DoubleSide,
   Float32BufferAttribute,
+  Intersection,
   Mesh,
   MeshBasicMaterial,
+  Object3D,
   PerspectiveCamera,
   PlaneGeometry,
+  Raycaster,
   Scene,
   ShaderMaterial,
   Shape,
   ShapeGeometry,
+  SphereGeometry,
   Vector2,
   WebGLRenderer,
 } from "three"
@@ -24,6 +28,10 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter"
 import { repair } from "./terrainRepair"
 
 let renderIteration = 0
+
+const drawnPolygon = JSON.parse(
+  new URLSearchParams(window.location.search).get("polygon")!,
+) as { x: number; y: number; z: number }[]
 
 function isInside(point: [number, number], vs: [number, number][]) {
   // ray-casting algorithm based on
@@ -88,6 +96,7 @@ function loadImageData(url: string) {
 
 function FloatingPanel() {
   const [scene] = useState(new Scene())
+  const [controls, setControls] = useState<OrbitControls>()
   const [camera, setCamera] = useState<Camera>()
   const [renderer, setRenderer] = useState<WebGLRenderer>()
 
@@ -97,13 +106,12 @@ function FloatingPanel() {
   const [height, setHeight] = useState(0)
   const [normal, setNormal] = useState<[number, number, number]>([0, 0, 1])
   const [funMode, setFunMode] = useState(false)
-  const drawnPolygon = JSON.parse(
-    new URLSearchParams(window.location.search).get("polygon")!,
-  ) as { x: number; y: number; z: number }[]
 
+  const [spheres] = useState(new Object3D())
   const polygon = drawnPolygon.map(
     (coord) => [coord.x, coord.y] as [number, number],
   )
+
   const polyMesh = useMemo(() => {
     const polyShape = new Shape(
       polygon.map((coord) => new Vector2(coord[0], coord[1])),
@@ -219,14 +227,15 @@ function FloatingPanel() {
     )
     newCamera.up.set(0, 0, 1)
     newCamera.position.set(-100, -200, 100)
-    new OrbitControls(newCamera, canvas)
     setCamera(newCamera)
+    setControls(new OrbitControls(newCamera, canvas))
 
     const dl = new DirectionalLight(0xffffff, 1)
     dl.position.set(1, 0.7, 0.2)
     scene.add(dl)
 
     scene.add(new AmbientLight(0xffffff, 1))
+    scene.add(spheres)
   }, [])
 
   useEffect(() => {
@@ -239,6 +248,77 @@ function FloatingPanel() {
         r = !r
       }
     })
+
+    const raycaster = new Raycaster()
+    const pointer = new Vector2()
+    let lastMouseEvent: MouseEvent | null = null
+    let activePoint: Intersection | null = null
+
+    function onMouseDown(event: MouseEvent) {
+      if (camera == null) return
+
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+
+      raycaster.setFromCamera(pointer, camera)
+      const intersects = raycaster.intersectObject(spheres)
+      activePoint = intersects[0]
+
+      if (activePoint != null && controls != null) {
+        controls.enabled = false
+      }
+    }
+
+    function onMouseUp() {
+      activePoint = null
+
+      if (controls) {
+        controls.enabled = true
+      }
+    }
+
+    function onMouseMove(event: MouseEvent) {
+      if (
+        lastMouseEvent != null &&
+        camera != null &&
+        terrainMesh != null &&
+        activePoint != null
+      ) {
+        if (event.ctrlKey || event.metaKey) {
+          pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+          pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+          raycaster.setFromCamera(pointer, camera)
+          const intersects = raycaster.intersectObject(terrainMesh)
+
+          if (intersects[0]) {
+            activePoint.object.position.setX(intersects[0].point.x)
+            activePoint.object.position.setY(intersects[0].point.y)
+          }
+        } else {
+          const dy = event.clientY - lastMouseEvent.clientY
+          activePoint.object.position.setZ(
+            activePoint.object.position.z - dy * 0.4,
+          )
+        }
+      }
+      lastMouseEvent = event
+    }
+
+    spheres.remove(...spheres.children)
+    drawnPolygon.forEach((point) => {
+      const sphere = new Mesh(
+        new SphereGeometry(3),
+        new MeshBasicMaterial({
+          side: DoubleSide,
+        }),
+      )
+      sphere.position.set(point.x, point.y, point.z)
+      spheres.add(sphere)
+    })
+
+    document.addEventListener("mousedown", onMouseDown, false)
+    document.addEventListener("mouseup", onMouseUp, false)
+    document.addEventListener("mousemove", onMouseMove, false)
 
     // Render the scene
     function loop(t: number) {
