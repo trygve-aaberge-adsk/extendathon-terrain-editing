@@ -357,7 +357,7 @@ function FloatingPanel() {
       />
       <input
         type="range"
-        min="0"
+        min="-1"
         max="1"
         step="0.1"
         value={normal[0]}
@@ -367,7 +367,7 @@ function FloatingPanel() {
       />
       <input
         type="range"
-        min="0"
+        min="-1"
         max="1"
         step="0.1"
         value={normal[1]}
