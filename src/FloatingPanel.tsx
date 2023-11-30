@@ -86,16 +86,6 @@ function loadImageData(url: string) {
   })
 }
 
-function goto(name?: string) {
-  const urlQuery = new URLSearchParams(window.location.search)
-  if (name != null) {
-    urlQuery.set("image", `${name}.png`)
-  } else {
-    urlQuery.delete("image")
-  }
-  window.location.href = `?${urlQuery.toString()}`
-}
-
 function FloatingPanel() {
   const [scene] = useState(new Scene())
   const [camera, setCamera] = useState<Camera>()
@@ -173,44 +163,46 @@ function FloatingPanel() {
     }),
   )
 
-  useEffect(() => {
-    async function getTerrainGeometry() {
-      const url = new URLSearchParams(window.location.search).get("image")
-      if (url) {
-        const data = await loadImageData(url)
-        const geometry = new PlaneGeometry(500, 500, 499, 499)
-        const posarray = geometry.getAttribute("position").array as Float32Array
-        for (let i = 0; i < 500 * 500; i++) {
-          const r = data[i * 4]
-          const g = data[i * 4 + 1]
-          const b = data[i * 4 + 2]
-          posarray[i * 3 + 2] = (r + g + b) * 0.02
-        }
-        return geometry
-      } else {
-        const terrainPath = await Forma.geometry.getPathsByCategory({
-          category: "terrain",
-        })
-        const terrainTriangles = await Forma.geometry.getTriangles({
-          path: terrainPath[0],
-        })
-        const geometry = new BufferGeometry()
-        geometry.setAttribute(
-          "position",
-          new BufferAttribute(terrainTriangles, 3),
-        )
-        return geometry
+  async function getTerrainGeometry(imageUrl?: string) {
+    if (imageUrl) {
+      const data = await loadImageData(imageUrl)
+      const geometry = new PlaneGeometry(500, 500, 499, 499)
+      const posarray = geometry.getAttribute("position").array as Float32Array
+      for (let i = 0; i < 500 * 500; i++) {
+        const r = data[i * 4]
+        const g = data[i * 4 + 1]
+        const b = data[i * 4 + 2]
+        posarray[i * 3 + 2] = (r + g + b) * 0.02
       }
+      return geometry
+    } else {
+      const terrainPath = await Forma.geometry.getPathsByCategory({
+        category: "terrain",
+      })
+      const terrainTriangles = await Forma.geometry.getTriangles({
+        path: terrainPath[0],
+      })
+      const geometry = new BufferGeometry()
+      geometry.setAttribute(
+        "position",
+        new BufferAttribute(terrainTriangles, 3),
+      )
+      return geometry
     }
+  }
 
-    async function initTerrain() {
-      const geometry = (await getTerrainGeometry()).toNonIndexed()
-      const mesh = new Mesh(geometry, terrainMaterial)
-      scene.add(mesh)
-      setOriginalTerrainGeometry(geometry)
-      setTerrainMesh(mesh)
+  async function initTerrain(imageUrl?: string) {
+    const geometry = (await getTerrainGeometry(imageUrl)).toNonIndexed()
+    const mesh = new Mesh(geometry, terrainMaterial)
+    if (terrainMesh != null) {
+      scene.remove(terrainMesh)
     }
+    scene.add(mesh)
+    setOriginalTerrainGeometry(geometry)
+    setTerrainMesh(mesh)
+  }
 
+  useEffect(() => {
     const canvas = document.getElementById("canvas") as HTMLCanvasElement
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
@@ -301,6 +293,11 @@ function FloatingPanel() {
       polyMesh.geometry.attributes.position.needsUpdate = true
     }
   }, [height, normal, originalTerrainGeometry])
+
+  function goto(name?: string) {
+    const imageUrl = name != null ? `${name}.png` : undefined
+    void initTerrain(imageUrl)
+  }
 
   async function save() {
     const refPoint = (await Forma.project.get()).refPoint
