@@ -2,18 +2,15 @@ import { Forma } from "forma-embedded-view-sdk/auto"
 import { useEffect, useState } from "preact/hooks"
 import {
   AmbientLight,
-  BoxGeometry,
   BufferAttribute,
   BufferGeometry,
   Camera,
   DirectionalLight,
   Mesh,
-  MeshLambertMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
   ShaderMaterial,
-  TextureLoader,
   WebGLRenderer,
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
@@ -203,15 +200,6 @@ function FloatingPanel() {
     new OrbitControls(newCamera, canvas)
     setCamera(newCamera)
 
-    // Setup the js app
-    const geometry = new BoxGeometry(10, 10, 10)
-    const m = new MeshLambertMaterial({
-      color: 0xffffff,
-      map: new TextureLoader().load("./sindre.png"),
-    })
-    const cube = new Mesh(geometry, m)
-    //scene.add(cube)
-
     const dl = new DirectionalLight(0xffffff, 1)
     dl.position.set(1, 0.7, 0.2)
     scene.add(dl)
@@ -234,7 +222,6 @@ function FloatingPanel() {
     function loop(t: number) {
       if (camera != null && renderer != null && terrainMesh != null) {
         terrainMaterial.uniforms.funMode.value = funMode
-        // cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
 
         if (r) {
           terrainMaterial.uniforms.time.value = t
