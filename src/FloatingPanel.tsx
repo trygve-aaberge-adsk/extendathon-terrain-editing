@@ -6,12 +6,16 @@ import {
   BufferAttribute,
   BufferGeometry,
   DirectionalLight,
+  DoubleSide,
+  Float32BufferAttribute,
   Mesh,
+  MeshBasicMaterial,
   MeshLambertMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
   ShaderMaterial,
+  ShapeGeometry,
   TextureLoader,
   WebGLRenderer,
 } from "three"
@@ -107,6 +111,26 @@ function FloatingPanel() {
     })
     const cube = new Mesh(geometry, m)
     //scene.add(cube)
+
+    const drawnPolygon = JSON.parse(
+      new URLSearchParams(window.location.search).get("polygon")!,
+    ) as { x: number; y: number; z: number }[]
+
+    const polyGeometry = new ShapeGeometry()
+    polyGeometry.setAttribute(
+      "position",
+      new Float32BufferAttribute(
+        drawnPolygon.flatMap((coord) => [coord.x, coord.y, coord.z]),
+        3,
+      ),
+    )
+    let polygon = new Mesh(
+      polyGeometry,
+      new MeshBasicMaterial({
+        side: DoubleSide,
+      }),
+    )
+    scene.add(polygon)
 
     const material = new ShaderMaterial({
       uniforms: {
