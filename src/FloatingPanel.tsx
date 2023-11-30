@@ -1,3 +1,5 @@
+import { Forma } from "forma-embedded-view-sdk/auto"
+import { useEffect } from "preact/hooks"
 import {
   AmbientLight,
   BoxGeometry,
@@ -14,8 +16,6 @@ import {
   WebGLRenderer,
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
-import { Forma } from "forma-embedded-view-sdk/auto"
-import { useEffect } from "preact/hooks"
 
 function loadImageData(url: string) {
   return new Promise<Uint8ClampedArray>((resolve, reject) => {
@@ -58,8 +58,8 @@ function FloatingPanel() {
             posarray[i * 3 + 2] = (900 - (r + g + b)) * 0.02
           }
           scene.add(new Mesh(plan, material))
-        }
-      )} else {
+        })
+      } else {
         const terrainPath = await Forma.geometry.getPathsByCategory({
           category: "terrain",
         })
@@ -67,44 +67,47 @@ function FloatingPanel() {
           path: terrainPath[0],
         })
         const geometry = new BufferGeometry()
-          geometry.setAttribute("position", new BufferAttribute(terrainTriangles, 3))
-          scene.add(new Mesh(geometry, material))
+        geometry.setAttribute(
+          "position",
+          new BufferAttribute(terrainTriangles, 3),
+        )
+        scene.add(new Mesh(geometry, material))
       }
-      }
-      lol()
-      const canvas = document.getElementById("canvas") as HTMLCanvasElement
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+    }
+    lol()
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
 
-      // Setup basic THREE js app for the canvas
-      const renderer = new WebGLRenderer({ canvas, antialias: true })
-      const scene = new Scene()
-      const camera = new PerspectiveCamera(
-        75,
-        canvas.width / canvas.height,
-        0.01,
-        1000,
-      )
-      camera.up.set(0, 0, 1)
-      camera.position.set(-100, -200, 100)
-      new OrbitControls(camera, canvas)
+    // Setup basic THREE js app for the canvas
+    const renderer = new WebGLRenderer({ canvas, antialias: true })
+    const scene = new Scene()
+    const camera = new PerspectiveCamera(
+      75,
+      canvas.width / canvas.height,
+      0.01,
+      1000,
+    )
+    camera.up.set(0, 0, 1)
+    camera.position.set(-100, -200, 100)
+    new OrbitControls(camera, canvas)
 
-      // Setup the js app
-      const geometry = new BoxGeometry(10, 10, 10)
-      const m = new MeshLambertMaterial({
-        color: 0xffffff,
-        map: new TextureLoader().load("./sindre.png"),
-      })
-      const cube = new Mesh(geometry, m)
-      scene.add(cube)
+    // Setup the js app
+    const geometry = new BoxGeometry(10, 10, 10)
+    const m = new MeshLambertMaterial({
+      color: 0xffffff,
+      map: new TextureLoader().load("./sindre.png"),
+    })
+    const cube = new Mesh(geometry, m)
+    scene.add(cube)
 
-      const material = new ShaderMaterial({
-        uniforms: {
-          time: { value: 0 },
-        },
-        wireframe: true,
-        // language=Glsl
-        vertexShader: `
+    const material = new ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+      },
+      wireframe: true,
+      // language=Glsl
+      vertexShader: `
             varying float f;
             uniform float time;
             void main() {
@@ -115,41 +118,40 @@ function FloatingPanel() {
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
             }
         `,
-        // language=Glsl
-        fragmentShader: `
+      // language=Glsl
+      fragmentShader: `
             varying float f;
             uniform float time;
             void main() {
                 gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
             }
         `,
-      })
+    })
 
+    const dl = new DirectionalLight(0xffffff, 1)
+    dl.position.set(1, 0.7, 0.2)
+    scene.add(dl)
 
-      const dl = new DirectionalLight(0xffffff, 1)
-      dl.position.set(1, 0.7, 0.2)
-      scene.add(dl)
+    scene.add(new AmbientLight(0xffffff, 1))
 
-      scene.add(new AmbientLight(0xffffff, 1))
-
-      let r = true
-      window.addEventListener("keydown", (e) => {
-        if (e.key === " " || e.key === "Space") {
-          r = !r
-        }
-      })
-
-      // Render the scene
-      function loop(t: number) {
-        cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
-        if (r) {
-          material.uniforms.time.value = t
-        }
-        renderer.render(scene, camera)
-        requestAnimationFrame(loop)
+    let r = true
+    window.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "Space") {
+        r = !r
       }
+    })
+
+    // Render the scene
+    function loop(t: number) {
+      cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
+      if (r) {
+        material.uniforms.time.value = t
+      }
+      renderer.render(scene, camera)
       requestAnimationFrame(loop)
-    } )
+    }
+    requestAnimationFrame(loop)
+  })
 
   return (
     <>
@@ -157,7 +159,9 @@ function FloatingPanel() {
       <button onClick={() => goto("sindre")}>Sindre</button>
       <button onClick={() => goto("john")}>John</button>
       <button onClick={() => goto("andrew")}>Andrew</button>
-      <button onClick={() => window.location.href = "" }>Current terrain</button>
+      <button onClick={() => (window.location.href = "")}>
+        Current terrain
+      </button>
     </>
   )
 }
