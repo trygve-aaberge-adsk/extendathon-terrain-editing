@@ -19,7 +19,7 @@ import {
   ShapeGeometry,
   TextureLoader,
   Vector2,
-  WebGLRenderer
+  WebGLRenderer,
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter"
@@ -143,12 +143,31 @@ function FloatingPanel() {
       const drawnPolygon = JSON.parse(
         new URLSearchParams(window.location.search).get("polygon")!,
       ) as { x: number; y: number; z: number }[]
-      const polygon = drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number])
-      let polyShape = new Shape(polygon.map((coord) => new Vector2(coord[0], coord[1])))
-      const polyGeometry = new ShapeGeometry(polyShape);
-      polyGeometry.setAttribute("position", new Float32BufferAttribute(polygon.map(coord => [coord[0], coord[1], height - (coord[0] * normal[0] + coord[1] * normal[1])]).flat(), 3))
-      let polygon2 = new Mesh(polyGeometry, new MeshBasicMaterial({ color: 0xff0000, side: DoubleSide}))
-      scene.add(polygon2);
+      const polygon = drawnPolygon.map(
+        (coord) => [coord.x, coord.y] as [number, number],
+      )
+      const polyShape = new Shape(
+        polygon.map((coord) => new Vector2(coord[0], coord[1])),
+      )
+      const polyGeometry = new ShapeGeometry(polyShape)
+      polyGeometry.setAttribute(
+        "position",
+        new Float32BufferAttribute(
+          polygon
+            .map((coord) => [
+              coord[0],
+              coord[1],
+              height - (coord[0] * normal[0] + coord[1] * normal[1]),
+            ])
+            .flat(),
+          3,
+        ),
+      )
+      const polygon2 = new Mesh(
+        polyGeometry,
+        new MeshBasicMaterial({ color: 0xff0000, side: DoubleSide }),
+      )
+      scene.add(polygon2)
       if (url) {
         // Usage example
         void loadImageData(url).then((data) => {
