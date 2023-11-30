@@ -5,6 +5,7 @@ import {
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
+  Camera,
   DirectionalLight,
   Mesh,
   MeshLambertMaterial,
@@ -17,6 +18,8 @@ import {
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter"
+
+let renderIteration = 0
 
 function isInside(point: [number, number], vs: [number, number][]) {
   // ray-casting algorithm based on
@@ -91,6 +94,9 @@ function goto(name?: string) {
 
 function FloatingPanel() {
   const [scene] = useState(new Scene())
+  const [camera, setCamera] = useState<Camera>()
+  const [renderer, setRenderer] = useState<WebGLRenderer>()
+
   const [originalTerrainGeometry, setOriginalTerrainGeometry] =
     useState<BufferGeometry>()
   const [terrainMesh, setTerrainMesh] = useState<Mesh>()
@@ -100,14 +106,15 @@ function FloatingPanel() {
   const [normal, setNormal] = useState<[number, number, number]>([0, 0, 1])
   const [funMode, setFunMode] = useState(false)
 
-  const terrainMaterial = new ShaderMaterial({
-    uniforms: {
-      time: { value: 0 },
-      funMode: { value: false },
-    },
-    wireframe: true,
-    // language=Glsl
-    vertexShader: `
+  const [terrainMaterial] = useState(
+    new ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        funMode: { value: false },
+      },
+      wireframe: true,
+      // language=Glsl
+      vertexShader: `
             varying float f;
             uniform float time;
             uniform bool funMode;
@@ -119,8 +126,8 @@ function FloatingPanel() {
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
             }
         `,
-    // language=Glsl
-    fragmentShader: `
+      // language=Glsl
+      fragmentShader: `
             varying float f;
             uniform float time;
             uniform bool funMode;
@@ -129,7 +136,8 @@ function FloatingPanel() {
                 if (funMode) gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
             }
         `,
-  })
+    }),
+  )
 
   useEffect(() => {
     async function initTerrain() {
@@ -184,16 +192,17 @@ function FloatingPanel() {
     void initTerrain()
 
     // Setup basic THREE js app for the canvas
-    const renderer = new WebGLRenderer({ canvas, antialias: true })
-    const camera = new PerspectiveCamera(
+    setRenderer(new WebGLRenderer({ canvas, antialias: true }))
+    const newCamera = new PerspectiveCamera(
       75,
       canvas.width / canvas.height,
       0.01,
       1000,
     )
-    camera.up.set(0, 0, 1)
-    camera.position.set(-100, -200, 100)
-    new OrbitControls(camera, canvas)
+    newCamera.up.set(0, 0, 1)
+    newCamera.position.set(-100, -200, 100)
+    new OrbitControls(newCamera, canvas)
+    setCamera(newCamera)
 
     // Setup the js app
     const geometry = new BoxGeometry(10, 10, 10)
@@ -209,6 +218,11 @@ function FloatingPanel() {
     scene.add(dl)
 
     scene.add(new AmbientLight(0xffffff, 1))
+  }, [])
+
+  useEffect(() => {
+    renderIteration++
+    const currentRenderIteration = renderIteration
 
     let r = true
     window.addEventListener("keydown", (e) => {
@@ -219,19 +233,22 @@ function FloatingPanel() {
 
     // Render the scene
     function loop(t: number) {
-      if (terrainMesh != null) {
+      if (camera != null && renderer != null && terrainMesh != null) {
         terrainMaterial.uniforms.funMode.value = funMode
-        cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
+        // cube.rotation.set(t * 0.0001, t * 0.00001, t * 0.0002)
+
         if (r) {
           terrainMaterial.uniforms.time.value = t
         }
-      }
 
-      renderer.render(scene, camera)
-      requestAnimationFrame(loop)
+        renderer.render(scene, camera)
+        if (currentRenderIteration === renderIteration) {
+          requestAnimationFrame(loop)
+        }
+      }
     }
     requestAnimationFrame(loop)
-  }, [])
+  }, [terrainMesh, funMode, camera, renderer])
 
   useEffect(() => {
     if (
