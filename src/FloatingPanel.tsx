@@ -250,18 +250,19 @@ function FloatingPanel() {
   }, [height, normal, originalTerrainGeometry])
 
   async function save() {
-    const mesh = scene.children.find((c) => c.type === "Mesh") as Mesh
     const glb: ArrayBuffer = await new Promise((resolve, reject) => {
-      const exportmesh = new Mesh(mesh.geometry.clone())
-      exportmesh.geometry.rotateX(-Math.PI / 2)
-      new GLTFExporter().parse(
-        exportmesh,
-        (res) => {
-          resolve(res as ArrayBuffer)
-        },
-        reject,
-        { binary: true },
-      )
+      if (terrainMesh != null) {
+        const exportmesh = new Mesh(terrainMesh.geometry.clone())
+        exportmesh.geometry.rotateX(-Math.PI / 2)
+        new GLTFExporter().parse(
+          exportmesh,
+          (res) => {
+            resolve(res as ArrayBuffer)
+          },
+          reject,
+          { binary: true },
+        )
+      }
     })
     await Forma.proposal.replaceTerrain({ glb })
   }
