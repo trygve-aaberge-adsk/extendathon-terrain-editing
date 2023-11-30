@@ -1,5 +1,5 @@
 import { Forma } from "forma-embedded-view-sdk/auto"
-import { useEffect, useState } from "preact/hooks"
+import { useEffect, useMemo, useState } from "preact/hooks"
 import {
   AmbientLight,
   BoxGeometry,
@@ -100,11 +100,40 @@ function FloatingPanel() {
   const [originalTerrainGeometry, setOriginalTerrainGeometry] =
     useState<BufferGeometry>()
   const [terrainMesh, setTerrainMesh] = useState<Mesh>()
-  const [polygon, setPolygon] = useState<[number, number][]>()
 
   const [height, setHeight] = useState(0)
   const [normal, setNormal] = useState<[number, number, number]>([0, 0, 1])
   const [funMode, setFunMode] = useState(false)
+
+  const drawnPolygon = JSON.parse(
+    new URLSearchParams(window.location.search).get("polygon")!,
+  ) as { x: number; y: number; z: number }[]
+  const polygon = drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number])
+  const polyMesh = useMemo(() => {
+    const polyShape = new Shape(
+    polygon.map((coord) => new Vector2(coord[0], coord[1])),
+  )
+  const polyGeometry = new ShapeGeometry(polyShape)
+    polyGeometry.setAttribute(
+      "position",
+      new Float32BufferAttribute(
+        polygon
+          .map((coord) => [
+            coord[0],
+            coord[1],
+            height - (coord[0] * normal[0] + coord[1] * normal[1]),
+          ])
+          .flat(),
+        3,
+      ),
+    )
+    const polyMesh = new Mesh(
+      polyGeometry,
+      new MeshBasicMaterial({ color: 0xff0000, side: DoubleSide }),
+    )
+    scene.add(polyMesh)
+    return polyMesh
+  },[])
 
   const terrainMaterial = new ShaderMaterial({
     uniforms: {
@@ -140,34 +169,6 @@ function FloatingPanel() {
   useEffect(() => {
     async function initTerrain() {
       const url = new URLSearchParams(window.location.search).get("image")
-      const drawnPolygon = JSON.parse(
-        new URLSearchParams(window.location.search).get("polygon")!,
-      ) as { x: number; y: number; z: number }[]
-      const polygon = drawnPolygon.map(
-        (coord) => [coord.x, coord.y] as [number, number],
-      )
-      const polyShape = new Shape(
-        polygon.map((coord) => new Vector2(coord[0], coord[1])),
-      )
-      const polyGeometry = new ShapeGeometry(polyShape)
-      polyGeometry.setAttribute(
-        "position",
-        new Float32BufferAttribute(
-          polygon
-            .map((coord) => [
-              coord[0],
-              coord[1],
-              height - (coord[0] * normal[0] + coord[1] * normal[1]),
-            ])
-            .flat(),
-          3,
-        ),
-      )
-      const polygon2 = new Mesh(
-        polyGeometry,
-        new MeshBasicMaterial({ color: 0xff0000, side: DoubleSide }),
-      )
-      scene.add(polygon2)
       if (url) {
         // Usage example
         void loadImageData(url).then((data) => {
@@ -203,16 +204,13 @@ function FloatingPanel() {
       }
     }
 
+    
+
     const canvas = document.getElementById("canvas") as HTMLCanvasElement
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    const drawnPolygon = JSON.parse(
-      new URLSearchParams(window.location.search).get("polygon")!,
-    ) as { x: number; y: number; z: number }[]
-    setPolygon(
-      drawnPolygon.map((coord) => [coord.x, coord.y] as [number, number]),
-    )
+
 
     void initTerrain()
 
@@ -283,6 +281,22 @@ function FloatingPanel() {
         new BufferAttribute(newTerrainVertices, 3),
       )
       terrainMesh.geometry.attributes.position.needsUpdate = true
+
+      polyMesh.geometry.setAttribute(
+        "position",
+        new Float32BufferAttribute(
+          polygon
+            .map((coord) => [
+              coord[0],
+              coord[1],
+              height - (coord[0] * normal[0] + coord[1] * normal[1]),
+            ])
+            .flat(),
+          3,
+        ),
+      )
+
+      polyMesh.geometry.attributes.position.needsUpdate = true
     }
   }, [height, normal, originalTerrainGeometry])
 
@@ -359,7 +373,7 @@ function FloatingPanel() {
       />
       <input
         type="range"
-        min="0"
+        min="-1"
         max="1"
         step="0.1"
         value={normal[0]}
@@ -369,7 +383,7 @@ function FloatingPanel() {
       />
       <input
         type="range"
-        min="0"
+        min="-1"
         max="1"
         step="0.1"
         value={normal[1]}
