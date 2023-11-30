@@ -102,8 +102,8 @@ function FloatingPanel() {
 
   const terrainMaterial = new ShaderMaterial({
     uniforms: {
-      funMode: { value: false },
       time: { value: 0 },
+      funMode: { value: false },
     },
     wireframe: true,
     // language=Glsl
@@ -125,8 +125,8 @@ function FloatingPanel() {
             uniform float time;
             uniform bool funMode;
             void main() {
-                gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0)
-                if(funMode) gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
+              gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
+                if (funMode) gl_FragColor = vec4(0.5 + 0.5*sin(time*0.001), 1.0 - f, 1.0, 1.0);
             }
         `,
   })
