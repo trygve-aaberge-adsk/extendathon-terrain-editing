@@ -140,25 +140,19 @@ function FloatingPanel() {
   )
 
   useEffect(() => {
-    async function initTerrain() {
+    async function getTerrainGeometry() {
       const url = new URLSearchParams(window.location.search).get("image")
-
       if (url) {
-        // Usage example
-        void loadImageData(url).then((data) => {
-          const plan = new PlaneGeometry(500, 500, 499, 499)
-          const posarray = plan.getAttribute("position").array as Float32Array
-          for (let i = 0; i < 500 * 500; i++) {
-            const r = data[i * 4]
-            const g = data[i * 4 + 1]
-            const b = data[i * 4 + 2]
-            posarray[i * 3 + 2] = (r + g + b) * 0.02
-          }
-          const mesh = new Mesh(plan, terrainMaterial)
-          scene.add(mesh)
-          setOriginalTerrainGeometry(plan)
-          setTerrainMesh(mesh)
-        })
+        const data = await loadImageData(url)
+        const geometry = new PlaneGeometry(500, 500, 499, 499)
+        const posarray = geometry.getAttribute("position").array as Float32Array
+        for (let i = 0; i < 500 * 500; i++) {
+          const r = data[i * 4]
+          const g = data[i * 4 + 1]
+          const b = data[i * 4 + 2]
+          posarray[i * 3 + 2] = (r + g + b) * 0.02
+        }
+        return geometry
       } else {
         const terrainPath = await Forma.geometry.getPathsByCategory({
           category: "terrain",
@@ -171,11 +165,16 @@ function FloatingPanel() {
           "position",
           new BufferAttribute(terrainTriangles, 3),
         )
-        const mesh = new Mesh(geometry, terrainMaterial)
-        scene.add(mesh)
-        setOriginalTerrainGeometry(geometry)
-        setTerrainMesh(mesh)
+        return geometry
       }
+    }
+
+    async function initTerrain() {
+      const geometry = await getTerrainGeometry()
+      const mesh = new Mesh(geometry, terrainMaterial)
+      scene.add(mesh)
+      setOriginalTerrainGeometry(geometry)
+      setTerrainMesh(mesh)
     }
 
     const canvas = document.getElementById("canvas") as HTMLCanvasElement
