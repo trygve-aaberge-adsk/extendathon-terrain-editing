@@ -44,7 +44,6 @@ function goto(name?: string) {
   } else {
     urlQuery.delete("image")
   }
-console.log(urlQuery.toString());
   window.location.href = `?${urlQuery.toString()}`
 }
 
