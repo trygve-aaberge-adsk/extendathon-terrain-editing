@@ -305,7 +305,7 @@ function FloatingPanel() {
     }
 
     spheres.remove(...spheres.children)
-    drawnPolygon.forEach((point) => {
+    drawnPolygon.slice(0, 3).forEach((point) => {
       const sphere = new Mesh(
         new SphereGeometry(3),
         new MeshBasicMaterial({
