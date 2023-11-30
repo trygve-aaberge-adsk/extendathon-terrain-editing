@@ -16,6 +16,7 @@ import {
   WebGLRenderer,
 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter"
 
 function loadImageData(url: string) {
   return new Promise<Uint8ClampedArray>((resolve, reject) => {
@@ -48,6 +49,7 @@ function goto(name?: string) {
 }
 
 function FloatingPanel() {
+  const scene = new Scene()
   useEffect(() => {
     async function lol() {
       const url = new URLSearchParams(window.location.search).get("image")
@@ -87,7 +89,6 @@ function FloatingPanel() {
 
     // Setup basic THREE js app for the canvas
     const renderer = new WebGLRenderer({ canvas, antialias: true })
-    const scene = new Scene()
     const camera = new PerspectiveCamera(
       75,
       canvas.width / canvas.height,
@@ -105,7 +106,7 @@ function FloatingPanel() {
       map: new TextureLoader().load("./sindre.png"),
     })
     const cube = new Mesh(geometry, m)
-    scene.add(cube)
+    //scene.add(cube)
 
     const material = new ShaderMaterial({
       uniforms: {
@@ -159,6 +160,16 @@ function FloatingPanel() {
     requestAnimationFrame(loop)
   })
 
+  async function save() {
+    const mesh = scene.children.find((c) => c.type === "Mesh") as Mesh
+    const glb: ArrayBuffer = await new Promise((resolve, reject) => {
+      const exportmesh = new Mesh(mesh.geometry.clone())
+      exportmesh.geometry.rotateX(-Math.PI / 2)
+      new GLTFExporter().parse(exportmesh, (res) => resolve(res as ArrayBuffer), reject, { binary: true })
+    })
+     await Forma.proposal.replaceTerrain({ glb })
+  }
+
   return (
     <>
       <button onClick={() => goto("erna")}>Erna</button>
@@ -166,6 +177,7 @@ function FloatingPanel() {
       <button onClick={() => goto("john")}>John</button>
       <button onClick={() => goto("andrew")}>Andrew</button>
       <button onClick={() => goto()}>Current terrain</button>
+      <button onClick={save}>Save</button>
     </>
   )
 }
