@@ -1,0 +1,22 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+canvas {
+  overflow: hidden;
+}
+
+body {
+  box-sizing: border-box;
+}
+
+weave-button {
+  width: 100%;
+}
+
+weave-select {
+  height: 24px;
+  width: 100%;
+  font-weight: 600;
+  font-size: 11px;
+}
