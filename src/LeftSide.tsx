@@ -20,18 +20,35 @@ function getFloatingPanelUrl(polygon: Vec3[] | undefined) {
   return url.toString()
 }
 
+function openFloatingPanel(polygon: Vec3[] | undefined) {
+  const url = getFloatingPanelUrl(polygon)
+  Forma.openFloatingPanel({
+    embeddedViewId: "floating-panel",
+    url,
+    preferredSize: {
+      width: 10000,
+      height: 10000,
+    },
+  })
+}
+
 export default function LeftSide() {
+  const polygonQuery = new URLSearchParams(window.location.search).get(
+    "polygon",
+  )
+
+  if (polygonQuery != null) {
+    openFloatingPanel(JSON.parse(polygonQuery))
+  }
+
   const selectPolygon = useCallback(() => {
     Forma.designTool.getPolygon().then((polygon) => {
-      const url = getFloatingPanelUrl(polygon)
-      Forma.openFloatingPanel({
-        embeddedViewId: "floating-panel",
-        url,
-        preferredSize: {
-          width: 10000,
-          height: 10000,
-        },
-      })
+      console.log("polygon", JSON.stringify(polygon))
+      console.log(
+        "polygon encoded",
+        encodeURIComponent(JSON.stringify(polygon)),
+      )
+      openFloatingPanel(polygon)
     })
   }, [])
 
