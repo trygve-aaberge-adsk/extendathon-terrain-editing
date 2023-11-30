@@ -52,5 +52,12 @@ export default function LeftSide() {
     })
   }, [])
 
-  return <weave-button onClick={selectPolygon}>test</weave-button>
+  return (
+    <>
+      <div>
+        <img width={"50%"} src={"/ragnhild.png"} />
+      </div>
+      <weave-button onClick={selectPolygon}>test</weave-button>
+    </>
+  )
 }
