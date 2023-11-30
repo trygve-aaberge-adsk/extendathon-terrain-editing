@@ -140,7 +140,7 @@ function FloatingPanel() {
             const r = data[i * 4]
             const g = data[i * 4 + 1]
             const b = data[i * 4 + 2]
-            posarray[i * 3 + 2] = (900 - (r + g + b)) * 0.02
+            posarray[i * 3 + 2] = (r + g + b) * 0.02
           }
           const mesh = new Mesh(plan, terrainMaterial)
           scene.add(mesh)
