@@ -55,10 +55,10 @@ export default function LeftSide() {
   return (
     <>
       <div>
-        <img width={"50%"} src={"/extendathon-terrain-editing/ragnhild.png"} />
+        <img width="100%" src={"/extendathon-terrain-editing/ragnhild.png"} />
       </div>
       <weave-button variant="solid" onClick={selectPolygon}>
-        test
+        Define polygon
       </weave-button>
     </>
   )
