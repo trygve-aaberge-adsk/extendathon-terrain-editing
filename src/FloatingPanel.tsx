@@ -106,6 +106,7 @@ function FloatingPanel() {
   const [terrainMesh, setTerrainMesh] = useState<Mesh>()
   const [height, setHeight] = useState(0)
   const [normal, setNormal] = useState<[number, number, number]>([0, 0, 1])
+  const [showBottomTooltip, setShowBottomTooltip] = useState(false)
   const [funMode, setFunMode] = useState(false)
 
   const [spheres] = useState(new Object3D())
@@ -267,6 +268,7 @@ function FloatingPanel() {
 
       if (activePoint != null && controls != null) {
         controls.enabled = false
+        setShowBottomTooltip(true)
       }
     }
 
@@ -275,6 +277,7 @@ function FloatingPanel() {
 
       if (controls) {
         controls.enabled = true
+        setShowBottomTooltip(false)
       }
     }
 
@@ -499,6 +502,13 @@ function FloatingPanel() {
       >
         {funMode ? "Please stop" : "I am bored"}{" "}
       </button>
+
+      <div
+        className="bottom-tooltip"
+        style={{ display: showBottomTooltip ? "" : "none" }}
+      >
+        Hold ctrl/cmd to move the point
+      </div>
     </>
   )
 }
