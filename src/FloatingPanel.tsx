@@ -60,8 +60,7 @@ function isInside(point: [number, number], vs: [number, number][]) {
 function getNewTerrainVertices(
   terrain: BufferGeometry,
   polygon: [number, number][],
-  height: number,
-  normal: [number, number, number],
+  getZ: (x: number, y: number) => number,
 ) {
   const newTerrain = terrain.clone()
   const posarray = newTerrain.toNonIndexed().getAttribute("position")
@@ -70,7 +69,7 @@ function getNewTerrainVertices(
     const x = posarray[i * 3]
     const y = posarray[i * 3 + 1]
     if (isInside([x, y], polygon)) {
-      posarray[i * 3 + 2] = height - (x * normal[0] + y * normal[1])
+      posarray[i * 3 + 2] = getZ(x, y)
     }
   }
   return posarray
@@ -311,18 +310,10 @@ function FloatingPanel() {
         spheresPolygon.push(spheresPolygon[0])
         const triangle = turfPolygon([spheresPolygon])
 
-        polyMesh.geometry.setAttribute(
-          "position",
-          new Float32BufferAttribute(
-            polygon.flatMap((coord) => {
-              const point = turfPoint(coord)
-              const zValue = turfPlanepoint(point, triangle)
-              return [coord[0], coord[1], zValue]
-            }),
-            3,
-          ),
-        )
-        polyMesh.geometry.attributes.position.needsUpdate = true
+        updateMeshes((x, y) => {
+          const point = turfPoint([x, y])
+          return turfPlanepoint(point, triangle)
+        })
       }
       lastMouseEvent = event
     }
@@ -362,44 +353,45 @@ function FloatingPanel() {
   }, [terrainMesh, funMode, camera, renderer])
 
   useEffect(() => {
-    if (
-      originalTerrainGeometry != null &&
-      polygon != null &&
-      terrainMesh != null
-    ) {
-      const newTerrainVertices = getNewTerrainVertices(
-        originalTerrainGeometry,
-        polygon,
-        height,
-        normal,
-      )
-      terrainMesh.geometry.setAttribute(
-        "position",
-        new BufferAttribute(newTerrainVertices, 3),
-      )
-      terrainMesh.geometry.attributes.position.needsUpdate = true
-
-      polyMesh.geometry.setAttribute(
-        "position",
-        new Float32BufferAttribute(
-          polygon
-            .map((coord) => [
-              coord[0],
-              coord[1],
-              height + 0.1 - (coord[0] * normal[0] + coord[1] * normal[1]),
-            ])
-            .flat(),
-          3,
-        ),
-      )
-
-      polyMesh.geometry.attributes.position.needsUpdate = true
-    }
+    updateMeshes((x, y) => height - (x * normal[0] + y * normal[1]))
   }, [height, normal, originalTerrainGeometry])
 
   function goto(name?: string) {
     const imageUrl = name != null ? `${name}.png` : undefined
     void initTerrain(imageUrl)
+  }
+
+  function updateMeshes(getZ: (x: number, y: number) => number) {
+    if (
+      originalTerrainGeometry == null ||
+      polygon == null ||
+      terrainMesh == null
+    )
+      return
+
+    const newTerrainVertices = getNewTerrainVertices(
+      originalTerrainGeometry,
+      polygon,
+      getZ,
+    )
+    terrainMesh.geometry.setAttribute(
+      "position",
+      new BufferAttribute(newTerrainVertices, 3),
+    )
+    terrainMesh.geometry.attributes.position.needsUpdate = true
+
+    polyMesh.geometry.setAttribute(
+      "position",
+      new Float32BufferAttribute(
+        polygon.flatMap((coord) => [
+          coord[0],
+          coord[1],
+          getZ(coord[0], coord[1]) + 0.1,
+        ]),
+        3,
+      ),
+    )
+    polyMesh.geometry.attributes.position.needsUpdate = true
   }
 
   async function save() {
