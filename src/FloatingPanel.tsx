@@ -426,38 +426,17 @@ function FloatingPanel() {
     <>
       <button
         onClick={() => {
-          goto("erna")
+          goto("trex")
         }}
       >
-        Erna
-      </button>
-      <button
-        onClick={() => {
-          goto("sindre")
-        }}
-      >
-        Sindre
-      </button>
-      <button
-        onClick={() => {
-          goto("john")
-        }}
-      >
-        John
-      </button>
-      <button
-        onClick={() => {
-          goto("andrew")
-        }}
-      >
-        Andrew
+        T-Rex
       </button>
       <button
         onClick={() => {
           goto()
         }}
       >
-        Current terrain
+        Existing terrain
       </button>
       <button
         onClick={() => {
